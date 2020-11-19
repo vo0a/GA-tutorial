@@ -1,0 +1,48 @@
+name: Github action tutorail
+on:
+  push:
+    branches: ["*"]
+  workflow_dispatch:
+
+jobs:
+  aws:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@v2.3.1
+
+      - uses: shallwefootball/s3-upload-action@master
+        with:
+          aws_key_id: ${{ secrets.GA_TUTORIAL_AWS_AWS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.GA_TUTORIAL_AWS_SECRET_ACCESS_KEY}}
+          aws_bucket: ga-tutorial
+          source_dir: src
+          destination_dir: ''
+      - uses: awact/cloudfront-action@master
+        env:
+          SOURCE_PATH: '/'
+          AWS_REGION: 'ap-northeast-2'
+          AWS_ACCESS_KEY_ID: ${{ secrets.GA_TUTORIAL_AWS_AWS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.GA_TUTORIAL_AWS_SECRET_ACCESS_KEY }}
+          DISTRIBUTION_ID: E1DNY09IHRPDVS
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🛎️ Checkout
+        uses: actions/checkout@v2.3.1
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      -
+        name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: vo0a
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: 🏗️ Build images
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true # buildkit을 쓰면 auto push가 안되는듯?
+          tags: |
+            vo0a/ga-tutorial-1118:${{github.run_id}}
